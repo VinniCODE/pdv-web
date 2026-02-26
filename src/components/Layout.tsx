@@ -1,6 +1,6 @@
 // src/components/Layout.tsx
-import { ReactNode } from 'react';
-import { ShoppingCart, Package, BarChart3, Settings } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { ShoppingCart, Package, BarChart3, Settings, ArrowRightLeft, Apple, Truck } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
@@ -11,48 +11,29 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen bg-aurora-dark text-white font-sans">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-aurora-dark text-[#F5F5F7] font-sans">
       <aside className="w-64 bg-aurora-card border-r border-aurora-border flex flex-col">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-aurora-primary tracking-wider">
-            PDV<span className="text-white">SIDNEY</span>
+        <div className="p-7">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2 tracking-tight">
+            <Apple className="text-aurora-primary mb-1" size={28} />
+            iStock <span className="text-aurora-primary font-light">Pro</span>
           </h1>
-          <p className="text-xs text-gray-500 mt-1 uppercase font-medium">Enterprise Edition</p>
+          <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-semibold">Enterprise OS</p>
         </div>
         
-        <nav className="flex-1 px-4 space-y-2 mt-4">
-          <NavItem 
-            to="/" 
-            icon={<Package size={20} />} 
-            label="Estoque" 
-            active={location.pathname === '/'} 
-          />
-          <NavItem 
-            to="/pdv" 
-            icon={<ShoppingCart size={20} />} 
-            label="Frente de Caixa" 
-            active={location.pathname === '/pdv'} 
-          />
-          <NavItem 
-            to="/relatorios" 
-            icon={<BarChart3 size={20} />} 
-            label="Relatórios" 
-            active={location.pathname === '/relatorios'} 
-          />
+        <nav className="flex-1 px-4 space-y-1.5 mt-2">
+          <NavItem to="/" icon={<Package size={20} />} label="Inventário" active={location.pathname === '/'} />
+          <NavItem to="/fornecedores" icon={<Truck size={20} />} label="Fornecedores" active={location.pathname === '/fornecedores'} />
+          <NavItem to="/movimentacoes" icon={<ArrowRightLeft size={20} />} label="Movimentações" active={location.pathname === '/movimentacoes'} />
+          <NavItem to="/pdv" icon={<ShoppingCart size={20} />} label="Ponto de Venda" active={location.pathname === '/pdv'} />
+          <NavItem to="/relatorios" icon={<BarChart3 size={20} />} label="Performance" active={location.pathname === '/relatorios'} />
         </nav>
 
         <div className="p-4 border-t border-aurora-border">
-          <NavItem 
-            to="/configuracoes" 
-            icon={<Settings size={20} />} 
-            label="Configurações" 
-            active={location.pathname === '/configuracoes'} 
-          />
+          <NavItem to="/configuracoes" icon={<Settings size={20} />} label="Ajustes" active={location.pathname === '/configuracoes'} />
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-8">
         {children}
       </main>
@@ -60,7 +41,6 @@ export function Layout({ children }: LayoutProps) {
   );
 }
 
-// Componente auxiliar para os itens do menu
 interface NavItemProps {
   to: string;
   icon: ReactNode;
@@ -72,10 +52,8 @@ function NavItem({ to, icon, label, active }: NavItemProps) {
   return (
     <Link 
       to={to}
-      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-        active 
-          ? 'bg-aurora-accent/20 text-aurora-primary border border-aurora-accent/50 shadow-[0_0_15px_rgba(112,0,255,0.1)]' 
-          : 'text-gray-400 hover:bg-aurora-border/50 hover:text-white'
+      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+        active ? 'bg-aurora-primary text-white shadow-md' : 'text-gray-400 hover:bg-aurora-border hover:text-white'
       }`}
     >
       {icon}

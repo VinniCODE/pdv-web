@@ -1,31 +1,39 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+// src/App.tsx
+import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { StoreProvider } from './context/StoreContext';
 import { Layout } from './components/Layout';
+import { Login } from './views/Login';
 import { Inventory } from './views/Inventory';
-
-// Componente temporário (Mock) para as rotas que ainda vamos fazer
-const PlaceholderScreen = ({ title, desc }: { title: string, desc: string }) => (
-  <div className="flex flex-col space-y-4">
-    <header>
-      <h2 className="text-3xl font-bold text-white">{title}</h2>
-      <p className="text-gray-400 mt-2">{desc}</p>
-    </header>
-    <div className="flex-1 flex items-center justify-center border-2 border-dashed border-aurora-border rounded-xl min-h-[400px]">
-      <p className="text-gray-500 font-medium">Módulo em desenvolvimento...</p>
-    </div>
-  </div>
-);
+import { POS } from './views/POS';
+import { Movements } from './views/Movements';
+import { Reports } from './views/Reports';
+import { Settings } from './views/Settings';
+import { Suppliers } from './views/Suppliers';
 
 export default function App() {
+  const [operatorName, setOperatorName] = useState<string | null>(null);
+
+  if (!operatorName) {
+    return <Login onLogin={setOperatorName} />;
+  }
+
   return (
-    <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Inventory />} />
-          <Route path="/pdv" element={<PlaceholderScreen title="Frente de Caixa" desc="Caixa Livre - Operador: Admin" />} />
-          <Route path="/relatorios" element={<PlaceholderScreen title="Relatórios Gerenciais" desc="Análise financeira e histórico de movimentações." />} />
-          <Route path="/configuracoes" element={<PlaceholderScreen title="Configurações" desc="Ajustes do sistema e sincronização offline." />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <StoreProvider>
+      <BrowserRouter>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Inventory />} />
+            <Route path="/fornecedores" element={<Suppliers />} />
+            <Route path="/movimentacoes" element={<Movements />} />
+            {/* O PDV agora sabe quem está logado */}
+            <Route path="/pdv" element={<POS operatorName={operatorName} />} /> 
+            <Route path="/relatorios" element={<Reports />} />
+            <Route path="/configuracoes" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </StoreProvider>
   );
 }

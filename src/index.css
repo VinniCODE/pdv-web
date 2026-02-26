@@ -1,31 +1,33 @@
 @import "tailwindcss";
 
 @theme {
-  --color-aurora-dark: #0B0E14;
-  --color-aurora-card: #151921;
-  --color-aurora-primary: #00D1FF;
-  --color-aurora-accent: #7000FF;
-  --color-aurora-border: #1F2937;
+  /* Novo Tema: Premium Apple Dark Mode */
+  --color-aurora-dark: #000000;      /* Preto puro do iOS */
+  --color-aurora-card: #1C1C1E;      /* Cinza chumbo dos cards da Apple */
+  --color-aurora-primary: #0A84FF;   /* Azul clássico do iOS */
+  --color-aurora-accent: #FF9F0A;    /* Laranja do iOS para alertas */
+  --color-aurora-border: #38383A;    /* Bordas sutis */
 }
 
 body {
   background-color: var(--color-aurora-dark);
-  color: white;
+  color: #F5F5F7; /* Branco off-white da Apple */
   -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
 }
 
-/* Estilização suave da barra de rolagem */
+/* Scrollbar minimalista */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background-color: var(--color-aurora-dark);
+  background-color: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: #374151; /* gray-700 */
-  border-radius: 9999px;
+  background-color: #48484A;
+  border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #6b7280; /* gray-500 */
+  background-color: #636366;
 }
