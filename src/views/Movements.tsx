@@ -4,7 +4,11 @@ import { ArrowRightLeft, Search, Plus, ArrowDownRight, ArrowUpRight, Filter, Pac
 import { useStore } from '../context/StoreContext';
 import type { StockMovement } from '../types/inventory';
 
-export function Movements() {
+interface MovementsProps {
+  operatorName?: string;
+}
+
+export function Movements({ operatorName = 'Administrador Padrão' }: MovementsProps) {
   const { movements, products, registerMovement } = useStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -13,7 +17,6 @@ export function Movements() {
     product_id: '', type: 'IN', quantity: 1
   });
 
-  // Filtro de busca no histórico
   const filteredMovements = movements.filter(m => 
     m.product_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.operator_id.toLowerCase().includes(searchQuery.toLowerCase())
@@ -21,7 +24,8 @@ export function Movements() {
 
   const handleSaveMovement = (e: React.FormEvent) => {
     e.preventDefault();
-    registerMovement(formData);
+    // CORREÇÃO DO ERRO AQUI: Passando o operador como 2º argumento
+    registerMovement(formData, operatorName);
     setIsModalOpen(false);
     setFormData({ product_id: '', type: 'IN', quantity: 1 });
   };
@@ -57,16 +61,13 @@ export function Movements() {
             <Search className="text-aurora-primary" size={20} />
           </div>
           <input 
-            type="text" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar por produto ou operador..." 
             className="flex-1 bg-transparent text-white focus:outline-none placeholder-gray-500 font-mono"
           />
         </div>
         <button className="bg-black/40 border border-aurora-border hover:border-gray-500 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-colors">
-          <Filter size={20} />
-          Filtrar
+          <Filter size={20} /> Filtrar
         </button>
       </div>
 
@@ -85,28 +86,13 @@ export function Movements() {
             <tbody className="divide-y divide-aurora-border">
               {filteredMovements.map((mov) => (
                 <tr key={mov.id} className="hover:bg-[#2C2C2E] transition-colors">
-                  <td className="p-4 text-gray-400 text-sm font-mono">
-                    {new Date(mov.date).toLocaleString('pt-BR')}
-                  </td>
-                  <td className="p-4 flex items-center gap-2">
-                    {getMovementIcon(mov.type)}
-                    {getMovementLabel(mov.type)}
-                  </td>
-                  <td className="p-4 font-bold text-white flex items-center gap-2">
-                    <Package size={16} className="text-gray-500" />
-                    {mov.product_id}
-                  </td>
+                  <td className="p-4 text-gray-400 text-sm font-mono">{new Date(mov.date).toLocaleString('pt-BR')}</td>
+                  <td className="p-4 flex items-center gap-2">{getMovementIcon(mov.type)}{getMovementLabel(mov.type)}</td>
+                  <td className="p-4 font-bold text-white flex items-center gap-2"><Package size={16} className="text-gray-500" />{mov.product_id}</td>
                   <td className="p-4 text-white font-bold text-lg">{mov.quantity} un</td>
                   <td className="p-4 text-gray-400 text-sm">{mov.operator_id}</td>
                 </tr>
               ))}
-              {filteredMovements.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-gray-500">
-                    Nenhuma movimentação registada no sistema.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
@@ -125,26 +111,21 @@ export function Movements() {
                 <label className="block text-xs uppercase tracking-wider font-bold text-gray-400 mb-1.5">Produto *</label>
                 <select required value={formData.product_id} onChange={e => setFormData({...formData, product_id: e.target.value})} className="w-full bg-black/40 border border-aurora-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-aurora-primary appearance-none cursor-pointer">
                   <option value="" disabled>Selecione um produto do inventário</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.sku}>{p.name} ({p.sku})</option>
-                  ))}
+                  {products.map(p => <option key={p.id} value={p.sku}>{p.name} ({p.sku})</option>)}
                 </select>
               </div>
-
               <div>
-                <label className="block text-xs uppercase tracking-wider font-bold text-gray-400 mb-1.5">Tipo de Movimentação *</label>
+                <label className="block text-xs uppercase tracking-wider font-bold text-gray-400 mb-1.5">Tipo *</label>
                 <select required value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as any})} className="w-full bg-black/40 border border-aurora-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-aurora-primary appearance-none cursor-pointer">
                   <option value="IN">Entrada (Compra/Reposição)</option>
                   <option value="OUT">Saída (Consumo/Perda)</option>
                   <option value="ADJUSTMENT">Ajuste de Inventário</option>
                 </select>
               </div>
-
               <div>
                 <label className="block text-xs uppercase tracking-wider font-bold text-gray-400 mb-1.5">Quantidade *</label>
                 <input required type="number" min="1" value={formData.quantity} onChange={e => setFormData({...formData, quantity: Number(e.target.value)})} className="w-full bg-black/40 border border-aurora-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-aurora-primary" />
               </div>
-
               <div className="flex justify-end gap-3 pt-6 mt-4 border-t border-aurora-border">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-[#3A3A3C] transition-colors font-bold">Cancelar</button>
                 <button type="submit" className="bg-aurora-primary hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-xl transition-colors shadow-lg">Confirmar</button>
