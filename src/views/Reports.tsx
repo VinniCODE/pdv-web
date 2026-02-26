@@ -1,6 +1,6 @@
 // src/views/Reports.tsx
 import { useMemo } from 'react';
-import { DollarSign, Package, TrendingUp, AlertCircle, Calendar, Filter } from 'lucide-react';
+import { TrendingUp, Calendar, Filter } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
 export function Reports() {

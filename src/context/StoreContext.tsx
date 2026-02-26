@@ -44,7 +44,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     { id: 'sup2', tenant_id: 'sidney-001', name: 'Ipeças Distribuidora', document: '11.111.111/0001-11', email: 'contato@ipecas.com', phone: '(11) 99999-9999', status: 'ACTIVE' }
   ]);
 
-  const [users, setUsers] = useState<User[]>([
+    const [users] = useState<User[]>([
     { id: 'u1', tenant_id: 'sidney-001', name: 'Sidney Diretor', email: 'admin@istock.pro', role: 'Administrador', status: 'ACTIVE' },
     { id: 'u2', tenant_id: 'sidney-001', name: 'Vinícius Caixa', email: 'caixa@istock.pro', role: 'Operador', status: 'ACTIVE' },
   ]);
