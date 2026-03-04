@@ -1,165 +1,175 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { Users, UserPlus, ShieldAlert, BadgeDollarSign, CreditCard, Edit3, X } from 'lucide-react';
+import { 
+  Users, Search, UserPlus, Phone, Edit3, 
+  Trash2, AlertCircle, X, User as UserIcon, Fingerprint 
+} from 'lucide-react';
 
 export const Customers = () => {
-  const { clientes, addCliente, updateCliente } = useStore();
-  const [search, setSearch] = useState('');
-  const [modalNovo, setModalNovo] = useState(false);
-  const [novoCli, setNovoCli] = useState({ nome: '', cpf: '', telefone: '', limiteCredito: 2000 });
-  const [selectedCli, setSelectedCli] = useState<any>(null);
+  const { clientes, setClientes, addLog } = useStore();
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Estados para Modais
+  const [showModal, setShowModal] = useState(false);
+  const [editingClient, setEditingClient] = useState<any>(null);
+  const [form, setForm] = useState({ nome: '', cpf: '', telefone: '', email: '' });
 
-  const filtered = clientes.filter((c: any) => c.nome.toLowerCase().includes(search.toLowerCase()) || c.cpf.includes(search));
+  const filteredClientes = clientes.filter((c: any) => 
+    c.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    c.cpf.includes(searchTerm)
+  );
 
-  const totalInadimplencia = clientes.reduce((acc: number, c: any) => acc + c.debito, 0);
-
-  const handleSalvar = () => {
-    if (!novoCli.nome) return alert('Nome é obrigatório');
-    addCliente(novoCli);
-    setModalNovo(false);
-    setNovoCli({ nome: '', cpf: '', telefone: '', limiteCredito: 2000 });
-    alert('Cliente cadastrado com sucesso!');
+  const handleOpenEdit = (cliente: any) => {
+    setEditingClient(cliente);
+    setForm({ nome: cliente.nome, cpf: cliente.cpf, telefone: cliente.telefone, email: cliente.email || '' });
+    setShowModal(true);
   };
 
-  const quitarDebito = (cliente: any) => {
-    const valor = Number(prompt(`Dívida total: R$ ${cliente.debito}\nQuanto o cliente está pagando agora?`, cliente.debito.toString()));
-    if (valor && valor > 0 && valor <= cliente.debito) {
-      updateCliente(cliente.id, { debito: cliente.debito - valor });
-      alert(`Pagamento de R$ ${valor} registrado. Dívida atualizada!`);
-      setSelectedCli(null);
+  const handleDelete = (id: string, nome: string) => {
+    if (window.confirm(`⚠️ ATENÇÃO: Deseja excluir o cadastro de ${nome}? Esta ação não pode ser desfeita.`)) {
+      setClientes(clientes.filter((c: any) => c.id !== id));
+      addLog('EXCLUSAO_CLIENTE', `Cadastro de ${nome} removido do sistema.`);
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.nome || !form.cpf) return alert("Nome e CPF são obrigatórios!");
+
+    if (editingClient) {
+      // Lógica de Edição
+      setClientes(clientes.map((c: any) => c.id === editingClient.id ? { ...c, ...form } : c));
+      addLog('EDICAO_CLIENTE', `Dados de ${form.nome} atualizados.`);
+    } else {
+      // Lógica de Novo Cadastro
+      setClientes([...clientes, { ...form, id: `c${Date.now()}`, totalGasto: 0, compras: 0 }]);
+      addLog('CADASTRO_CLIENTE', `Novo cliente: ${form.nome} registrado.`);
+    }
+
+    setShowModal(false);
+    setEditingClient(null);
+    setForm({ nome: '', cpf: '', telefone: '', email: '' });
+  };
+
   return (
-    <div className="p-4 md:p-8 bg-zinc-950 text-white min-h-screen pb-32">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-zinc-800 pb-6">
+    <div className="p-4 md:p-10 bg-black min-h-screen pb-32">
+      
+      {/* CABEÇALHO */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-10 gap-6">
         <div>
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter flex items-center gap-3">
-            <Users className="text-blue-500" size={36} /> Base de Clientes
+          <h2 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter flex items-center gap-4">
+            <Users className="text-blue-500" size={48} /> Clientes
           </h2>
-          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-1">CRM e Gestão de Crediário</p>
+          <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-2">Gestão de Base de Dados</p>
         </div>
-        <button onClick={() => setModalNovo(true)} className="bg-blue-600 hover:bg-white hover:text-black text-white px-6 py-4 rounded-2xl font-black uppercase italic text-xs tracking-widest transition-all shadow-xl flex items-center gap-2">
-          <UserPlus size={18} /> Novo Cliente
-        </button>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 flex items-center justify-between">
-          <div>
-            <p className="text-zinc-500 text-[10px] font-black uppercase mb-2 flex items-center gap-2"><BadgeDollarSign size={12}/> Total em Fiado (A Receber)</p>
-            <p className="text-4xl font-mono font-black text-red-500">R$ {totalInadimplencia.toLocaleString()}</p>
+        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+          <div className="relative flex-1 sm:w-80">
+            <Search className="absolute left-5 top-5 text-zinc-600" size={20} />
+            <input 
+              type="text" 
+              placeholder="BUSCAR NOME OU CPF..."
+              className="w-full bg-zinc-900 border-2 border-zinc-800 p-5 pl-14 rounded-2xl font-bold focus:border-blue-500 outline-none uppercase text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <ShieldAlert size={60} className="text-red-500/10" />
-        </div>
-        <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 flex items-center justify-between">
-          <div>
-            <p className="text-zinc-500 text-[10px] font-black uppercase mb-2 flex items-center gap-2"><Users size={12}/> Clientes Ativos</p>
-            <p className="text-4xl font-mono font-black text-blue-500">{clientes.length}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] overflow-hidden">
-        <div className="p-6 border-b border-zinc-800">
-          <input 
-            placeholder="Pesquisar por nome ou CPF..." 
-            value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-2xl text-white font-bold outline-none focus:border-blue-500 transition-colors"
-          />
-        </div>
-        <div className="overflow-x-auto p-6">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-zinc-500 text-[10px] font-black uppercase border-b border-zinc-800 pb-4">
-                <th className="pb-4">Cliente / Contato</th>
-                <th className="pb-4 text-center">Compras</th>
-                <th className="pb-4 text-right">Total Gasto</th>
-                <th className="pb-4 text-right">Dívida (Fiado)</th>
-                <th className="pb-4 text-center">Gestão</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((c: any) => (
-                <tr key={c.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-all">
-                  <td className="py-6">
-                    <p className="font-bold uppercase italic text-sm">{c.nome}</p>
-                    <p className="text-[10px] font-mono text-zinc-500 mt-1">{c.cpf || 'Sem CPF'} • {c.telefone || 'Sem Fone'}</p>
-                  </td>
-                  <td className="py-6 text-center font-mono font-bold text-zinc-400">{c.compras}</td>
-                  <td className="py-6 text-right font-mono font-bold text-green-500">R$ {c.totalGasto.toLocaleString()}</td>
-                  <td className="py-6 text-right">
-                    <span className={`font-mono font-black ${c.debito > 0 ? 'text-red-500' : 'text-zinc-600'}`}>
-                      R$ {c.debito.toLocaleString()}
-                    </span>
-                    <br />
-                    <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Limite: R$ {c.limiteCredito.toLocaleString()}</span>
-                  </td>
-                  <td className="py-6 text-center">
-                    <button onClick={() => setSelectedCli(c)} className="p-4 bg-zinc-800 rounded-2xl hover:bg-white hover:text-black transition-all shadow-xl">
-                      <Edit3 size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <button 
+            onClick={() => { setEditingClient(null); setForm({nome:'', cpf:'', telefone:'', email:''}); setShowModal(true); }}
+            className="bg-blue-600 hover:bg-white hover:text-black text-white px-8 py-5 rounded-2xl font-black uppercase italic text-xs tracking-widest transition-all shadow-xl flex items-center justify-center gap-3 active:scale-95"
+          >
+            <UserPlus size={20} /> Novo Cadastro
+          </button>
         </div>
       </div>
 
-      {/* MODAL NOVO CLIENTE */}
-      {modalNovo && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-[3rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in">
-            <h2 className="text-2xl font-black italic uppercase mb-6 flex items-center gap-2"><UserPlus className="text-blue-500"/> Cadastrar Cliente</h2>
-            <div className="space-y-4">
-              <input placeholder="Nome Completo" value={novoCli.nome} onChange={e => setNovoCli({...novoCli, nome: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-xs font-bold uppercase outline-none focus:border-blue-500" />
-              <input placeholder="CPF" value={novoCli.cpf} onChange={e => setNovoCli({...novoCli, cpf: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-xs font-bold uppercase outline-none focus:border-blue-500" />
-              <input placeholder="Telefone / WhatsApp" value={novoCli.telefone} onChange={e => setNovoCli({...novoCli, telefone: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-xs font-bold uppercase outline-none focus:border-blue-500" />
+      {/* MODAL ÚNICO (CADASTRO/EDIÇÃO) */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+          <div className="bg-zinc-950 border-2 border-zinc-800 w-full max-w-lg rounded-[2.5rem] p-8 md:p-12 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-10">
+              <h3 className="text-2xl font-black uppercase italic tracking-tighter flex items-center gap-3 text-white">
+                {editingClient ? <Edit3 className="text-blue-500" /> : <UserPlus className="text-blue-500" />}
+                {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
+              </h3>
+              <button onClick={() => setShowModal(false)} className="text-zinc-500 hover:text-white transition-colors"><X size={28}/></button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="text-[10px] font-black text-zinc-500 uppercase">Limite de Crédito (Fiado) R$</label>
-                <input type="number" value={novoCli.limiteCredito} onChange={e => setNovoCli({...novoCli, limiteCredito: Number(e.target.value)})} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-xs font-mono font-bold outline-none focus:border-blue-500 mt-1" />
+                <label className="text-[10px] font-black text-zinc-600 uppercase mb-2 block tracking-widest">Nome Completo</label>
+                <div className="relative">
+                  <UserIcon className="absolute left-4 top-4 text-zinc-700" size={18} />
+                  <input 
+                    autoFocus required
+                    className="w-full bg-zinc-900 border border-zinc-800 p-4 pl-12 rounded-xl font-bold focus:border-blue-500 outline-none uppercase text-sm text-white"
+                    value={form.nome}
+                    onChange={e => setForm({...form, nome: e.target.value})}
+                  />
+                </div>
               </div>
-              <div className="flex gap-4 mt-6">
-                <button onClick={() => setModalNovo(false)} className="flex-1 py-4 text-zinc-500 font-black uppercase text-xs italic">Cancelar</button>
-                <button onClick={handleSalvar} className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase italic text-xs shadow-xl hover:bg-white hover:text-black transition-all">Salvar</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* MODAL PERFIL DO CLIENTE (QUITAR DÍVIDA) */}
-      {selectedCli && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-[3rem] p-10 w-full max-w-md shadow-2xl animate-in zoom-in">
-            <div className="flex justify-between items-start mb-8">
-              <div>
-                <h2 className="text-3xl font-black italic uppercase text-white leading-tight">{selectedCli.nome}</h2>
-                <p className="text-xs font-mono text-zinc-500 mt-1">{selectedCli.cpf} • {selectedCli.telefone}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-[10px] font-black text-zinc-600 uppercase mb-2 block tracking-widest">CPF / Identidade</label>
+                  <input 
+                    required
+                    className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl font-bold focus:border-blue-500 outline-none text-sm text-white"
+                    value={form.cpf}
+                    onChange={e => setForm({...form, cpf: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-zinc-600 uppercase mb-2 block tracking-widest">Telefone</label>
+                  <input 
+                    className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl font-bold focus:border-blue-500 outline-none text-sm text-white"
+                    value={form.telefone}
+                    onChange={e => setForm({...form, telefone: e.target.value})}
+                  />
+                </div>
               </div>
-              <button onClick={() => setSelectedCli(null)} className="p-2 bg-zinc-800 rounded-full hover:bg-red-500 transition-colors"><X size={20} /></button>
-            </div>
 
-            <div className="bg-zinc-950 p-6 rounded-3xl border border-zinc-800 mb-6">
-              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Dívida Atual</p>
-              <p className={`text-4xl font-mono font-black ${selectedCli.debito > 0 ? 'text-red-500' : 'text-green-500'}`}>
-                R$ {selectedCli.debito.toLocaleString()}
-              </p>
-              <div className="w-full bg-zinc-800 h-2 rounded-full mt-4 overflow-hidden">
-                <div className="h-full bg-red-500" style={{ width: `${Math.min(100, (selectedCli.debito / selectedCli.limiteCredito) * 100)}%` }} />
-              </div>
-              <p className="text-[9px] font-bold text-zinc-500 uppercase mt-2 text-right">Limite de R$ {selectedCli.limiteCredito}</p>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <button onClick={() => quitarDebito(selectedCli)} disabled={selectedCli.debito <= 0} className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase italic text-sm shadow-xl flex items-center justify-center gap-2 hover:scale-105 transition-transform disabled:opacity-30 disabled:cursor-not-allowed">
-                <CreditCard size={18} /> Registrar Pagamento de Dívida
+              <button type="submit" className="w-full bg-blue-600 py-6 rounded-2xl font-black uppercase italic tracking-widest hover:bg-white hover:text-black transition-all shadow-lg active:scale-95">
+                {editingClient ? 'Salvar Alterações' : 'Confirmar Registro'}
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
+
+      {/* GRADE DE CLIENTES */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {filteredClientes.map((c: any) => (
+          <div key={c.id} className="bg-zinc-950 border-2 border-zinc-900 p-8 rounded-[2.5rem] relative overflow-hidden group hover:border-blue-500 transition-all shadow-2xl">
+            <div className="flex justify-between items-start mb-6">
+              <div className="w-14 h-14 bg-zinc-900 rounded-2xl flex items-center justify-center text-zinc-600 group-hover:text-blue-500 transition-colors">
+                <UserIcon size={28} />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => handleOpenEdit(c)} className="p-3 bg-zinc-900 rounded-xl text-zinc-500 hover:text-blue-500 hover:bg-zinc-800 transition-all">
+                  <Edit3 size={18} />
+                </button>
+                <button onClick={() => handleDelete(c.id, c.nome)} className="p-3 bg-zinc-900 rounded-xl text-zinc-500 hover:text-red-500 hover:bg-zinc-800 transition-all">
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </div>
+
+            <h3 className="text-2xl font-black uppercase italic leading-none mb-1 text-white">{c.nome}</h3>
+            <p className="text-zinc-600 text-xs font-mono tracking-widest mb-6">{c.cpf}</p>
+
+            <div className="flex items-center gap-3 text-zinc-400 mb-6">
+              <Phone size={14} />
+              <span className="text-xs font-bold font-mono">{c.telefone}</span>
+            </div>
+
+            <div className="flex justify-between items-end border-t border-zinc-900 pt-6">
+               <div className="text-blue-500 font-black text-xl font-mono">R$ {c.totalGasto.toLocaleString()}</div>
+               <div className="text-[9px] font-black text-zinc-700 uppercase">Total Gasto</div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

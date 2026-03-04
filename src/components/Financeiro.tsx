@@ -1,165 +1,175 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
-import { Landmark, TrendingUp, TrendingDown, DollarSign, PlusCircle, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { 
+  Landmark, ArrowUpCircle, ArrowDownCircle, 
+  Calendar, CheckCircle2, Clock, PieChart, 
+  Plus, TrendingDown, X, DollarSign 
+} from 'lucide-react';
 
 export const Financeiro = () => {
-  const { sales, transacoes, addTransacao, baixarTransacao } = useStore();
-  const [modalNova, setModalNova] = useState(false);
-  const [novaTransacao, setNovaTransacao] = useState({ tipo: 'DESPESA', descricao: '', valor: '', vencimento: '' });
-
-  // --- CÁLCULOS DO DRE (Demonstração do Resultado do Exercício) ---
+  const { transacoes, performance, baixarTransacao, addTransacao } = useStore();
   
-  // 1. Receita Bruta (Tudo que foi vendido)
-  const receitaBruta = sales.reduce((acc: number, sale: any) => acc + sale.total, 0);
-  
-  // 2. CMV (Custo da Mercadoria Vendida) - Quanto custou os iPhones que saíram
-  const cmv = sales.reduce((acc: number, sale: any) => {
-    return acc + sale.cart.reduce((itemAcc: number, item: any) => itemAcc + (item.cost || 0), 0);
-  }, 0);
+  // Estado para o Modal de Nova Despesa
+  const [showModal, setShowModal] = useState(false);
+  const [novaDespesa, setNovaDespesa] = useState({
+    descricao: '',
+    valor: '',
+    vencimento: new Date().toISOString().split('T')[0]
+  });
 
-  // 3. Lucro Bruto
-  const lucroBruto = receitaBruta - cmv;
+  const dre = useMemo(() => {
+    const receitas = performance.totalVendido;
+    const despesasPagas = transacoes
+      .filter((t: any) => t.tipo === 'DESPESA' && t.status === 'PAGO')
+      .reduce((acc: number, t: any) => acc + t.valor, 0);
+    const despesasPendentes = transacoes
+      .filter((t: any) => t.tipo === 'DESPESA' && t.status === 'PENDENTE')
+      .reduce((acc: number, t: any) => acc + t.valor, 0);
+    
+    return {
+      bruto: receitas,
+      liquido: receitas - despesasPagas,
+      pendente: despesasPendentes
+    };
+  }, [transacoes, performance.totalVendido]);
 
-  // 4. Despesas Operacionais (Aluguel, Luz, etc - apenas as do tipo DESPESA)
-  const despesasOperacionais = transacoes
-    .filter((t: any) => t.tipo === 'DESPESA')
-    .reduce((acc: number, t: any) => acc + t.valor, 0);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!novaDespesa.descricao || !novaDespesa.valor) return;
 
-  // 5. Receitas Extras (Cashback de fornecedor, juros recebidos, etc)
-  const receitasExtras = transacoes
-    .filter((t: any) => t.tipo === 'RECEITA')
-    .reduce((acc: number, t: any) => acc + t.valor, 0);
-
-  // 6. Lucro Líquido Real (O que sobra no bolso do Sidney)
-  const lucroLiquido = lucroBruto + receitasExtras - despesasOperacionais;
-  const margemLiquida = receitaBruta > 0 ? (lucroLiquido / receitaBruta) * 100 : 0;
-
-  // --- AÇÕES ---
-  const handleSalvar = () => {
-    if (!novaTransacao.descricao || !novaTransacao.valor || !novaTransacao.vencimento) return alert("Preencha todos os campos.");
     addTransacao({
-      ...novaTransacao,
-      valor: Number(novaTransacao.valor),
+      tipo: 'DESPESA',
+      descricao: novaDespesa.descricao,
+      valor: parseFloat(novaDespesa.valor),
+      vencimento: novaDespesa.vencimento,
       status: 'PENDENTE'
     });
-    setModalNova(false);
-    setNovaTransacao({ tipo: 'DESPESA', descricao: '', valor: '', vencimento: '' });
+
+    setShowModal(false);
+    setNovaDespesa({ descricao: '', valor: '', vencimento: new Date().toISOString().split('T')[0] });
   };
 
   return (
-    <div className="p-4 md:p-8 bg-zinc-950 text-white min-h-screen pb-32">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4 border-b border-zinc-800 pb-6">
+    <div className="p-4 md:p-10 bg-black min-h-screen pb-32">
+      
+      {/* CABEÇALHO FINANCEIRO */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-10 gap-6">
         <div>
-          <h2 className="text-4xl font-black italic uppercase tracking-tighter flex items-center gap-3">
-            <Landmark className="text-blue-500" size={36} /> Gestão Financeira
+          <h2 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter flex items-center gap-4">
+            <Landmark className="text-green-500" size={48} /> Finanças <span className="text-zinc-800">/ DRE</span>
           </h2>
-          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-1">DRE Simplificado & Contas a Pagar</p>
+          <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-2">Gestão de Fluxo e Lucratividade Real</p>
         </div>
-        <button onClick={() => setModalNova(true)} className="bg-blue-600 hover:bg-white hover:text-black text-white px-6 py-4 rounded-2xl font-black uppercase italic text-xs tracking-widest transition-all shadow-xl flex items-center gap-2">
-          <PlusCircle size={18} /> Novo Lançamento
+
+        {/* BOTÃO ATUALIZADO */}
+        <button 
+          onClick={() => setShowModal(true)}
+          className="bg-zinc-900 border border-zinc-800 hover:bg-white hover:text-black text-white px-8 py-5 rounded-2xl font-black uppercase italic text-xs tracking-widest transition-all shadow-xl flex items-center justify-center gap-3 active:scale-95"
+        >
+          <Plus size={20} /> Nova Despesa
         </button>
       </div>
 
-      {/* DRE - DEMONSTRAÇÃO DE RESULTADO DO EXERCÍCIO */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div className="bg-zinc-900 p-6 rounded-[2rem] border border-zinc-800">
-          <p className="text-zinc-500 text-[10px] font-black uppercase mb-2 flex items-center gap-2"><TrendingUp size={14}/> Receita Bruta (Vendas)</p>
-          <p className="text-2xl font-mono font-black text-white">R$ {receitaBruta.toLocaleString()}</p>
-        </div>
-        
-        <div className="bg-zinc-900 p-6 rounded-[2rem] border border-zinc-800">
-          <p className="text-zinc-500 text-[10px] font-black uppercase mb-2 flex items-center gap-2"><TrendingDown size={14}/> Custos Prod. (CMV)</p>
-          <p className="text-2xl font-mono font-black text-red-400">- R$ {cmv.toLocaleString()}</p>
-        </div>
-
-        <div className="bg-zinc-900 p-6 rounded-[2rem] border border-zinc-800">
-          <p className="text-zinc-500 text-[10px] font-black uppercase mb-2 flex items-center gap-2"><TrendingDown size={14}/> Despesas Operacionais</p>
-          <p className="text-2xl font-mono font-black text-red-500">- R$ {despesasOperacionais.toLocaleString()}</p>
-        </div>
-
-        <div className={`p-6 rounded-[2rem] border ${lucroLiquido >= 0 ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-          <p className={`text-[10px] font-black uppercase mb-2 flex items-center gap-2 ${lucroLiquido >= 0 ? 'text-green-500' : 'text-red-500'}`}><DollarSign size={14}/> Lucro Líquido</p>
-          <p className={`text-3xl font-mono font-black ${lucroLiquido >= 0 ? 'text-green-400' : 'text-red-500'}`}>R$ {lucroLiquido.toLocaleString()}</p>
-          <p className="text-[10px] font-bold uppercase mt-2 text-zinc-400 tracking-widest">Margem: {margemLiquida.toFixed(1)}%</p>
-        </div>
-      </div>
-
-      {/* PAINEL DE CONTAS A PAGAR / RECEBER */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] overflow-hidden">
-        <div className="p-8 border-b border-zinc-800">
-          <h3 className="text-xl font-black italic uppercase tracking-tight">Lançamentos / Contas a Pagar</h3>
-        </div>
-        <div className="p-8 overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-zinc-500 text-[10px] font-black uppercase border-b border-zinc-800 pb-4">
-                <th className="pb-4">Descrição</th>
-                <th className="pb-4 text-center">Vencimento</th>
-                <th className="pb-4 text-center">Status</th>
-                <th className="pb-4 text-right">Valor</th>
-                <th className="pb-4 text-center">Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transacoes.map((t: any) => (
-                <tr key={t.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-all">
-                  <td className="py-6">
-                    <p className="font-bold uppercase italic text-sm">{t.descricao}</p>
-                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md mt-1 inline-block ${t.tipo === 'DESPESA' ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
-                      {t.tipo}
-                    </span>
-                  </td>
-                  <td className="py-6 text-center font-mono text-zinc-400 text-xs">
-                    {new Date(t.vencimento).toLocaleDateString('pt-BR')}
-                  </td>
-                  <td className="py-6 text-center">
-                    {t.status === 'PAGO' ? (
-                      <span className="flex items-center justify-center gap-1 text-[10px] text-green-500 font-black uppercase"><CheckCircle size={12}/> Pago</span>
-                    ) : (
-                      <span className="flex items-center justify-center gap-1 text-[10px] text-orange-500 font-black uppercase"><AlertCircle size={12}/> Pendente</span>
-                    )}
-                  </td>
-                  <td className={`py-6 text-right font-mono font-bold text-lg ${t.tipo === 'DESPESA' ? 'text-red-400' : 'text-green-400'}`}>
-                    R$ {t.valor.toLocaleString()}
-                  </td>
-                  <td className="py-6 text-center">
-                    {t.status === 'PENDENTE' && (
-                      <button onClick={() => { if(window.confirm('Confirmar pagamento desta conta?')) baixarTransacao(t.id) }} className="px-4 py-2 bg-zinc-800 rounded-xl hover:bg-white hover:text-black transition-all text-[9px] font-black uppercase italic tracking-widest shadow-xl">
-                        Baixar
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* MODAL NOVO LANÇAMENTO */}
-      {modalNova && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-[3rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in">
-            <h2 className="text-2xl font-black italic uppercase mb-6 flex items-center gap-2"><DollarSign className="text-blue-500"/> Novo Lançamento</h2>
-            <div className="space-y-4">
-              <select value={novaTransacao.tipo} onChange={e => setNovaTransacao({...novaTransacao, tipo: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-xs font-bold uppercase outline-none focus:border-blue-500 text-white">
-                <option value="DESPESA">Despesa (A Pagar)</option>
-                <option value="RECEITA">Receita Extra (A Receber)</option>
-              </select>
-              <input placeholder="Descrição (Ex: Conta de Luz)" value={novaTransacao.descricao} onChange={e => setNovaTransacao({...novaTransacao, descricao: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-xs font-bold uppercase outline-none focus:border-blue-500" />
-              <input type="number" placeholder="Valor (R$)" value={novaTransacao.valor} onChange={e => setNovaTransacao({...novaTransacao, valor: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-xs font-mono font-bold outline-none focus:border-blue-500" />
-              <div>
-                <label className="text-[10px] font-black text-zinc-500 uppercase">Data de Vencimento</label>
-                <input type="date" value={novaTransacao.vencimento} onChange={e => setNovaTransacao({...novaTransacao, vencimento: e.target.value})} className="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl text-xs font-mono font-bold outline-none focus:border-blue-500 mt-1 uppercase text-zinc-400" />
-              </div>
-              <div className="flex gap-4 mt-6">
-                <button onClick={() => setModalNova(false)} className="flex-1 py-4 text-zinc-500 font-black uppercase text-xs italic">Cancelar</button>
-                <button onClick={handleSalvar} className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase italic text-xs shadow-xl hover:bg-white hover:text-black transition-all">Lançar</button>
-              </div>
+      {/* MODAL DE CADASTRO (RESPONSIVO) */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-zinc-950 border-2 border-zinc-800 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-xl font-black uppercase italic tracking-tighter">Lançar Despesa</h3>
+              <button onClick={() => setShowModal(false)} className="text-zinc-500 hover:text-white"><X size={24}/></button>
             </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="text-[10px] font-black text-zinc-600 uppercase mb-2 block">Descrição da Conta</label>
+                <input 
+                  autoFocus
+                  className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl font-bold focus:border-blue-500 outline-none uppercase text-sm"
+                  placeholder="Ex: Aluguel, Internet, Reposição..."
+                  value={novaDespesa.descricao}
+                  onChange={e => setNovaDespesa({...novaDespesa, descricao: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-zinc-600 uppercase mb-2 block">Valor (R$)</label>
+                  <input 
+                    type="number"
+                    className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl font-bold focus:border-blue-500 outline-none"
+                    placeholder="0.00"
+                    value={novaDespesa.valor}
+                    onChange={e => setNovaDespesa({...novaDespesa, valor: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-zinc-600 uppercase mb-2 block">Vencimento</label>
+                  <input 
+                    type="date"
+                    className="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl font-bold focus:border-blue-500 outline-none text-zinc-400"
+                    value={novaDespesa.vencimento}
+                    onChange={e => setNovaDespesa({...novaDespesa, vencimento: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase italic tracking-widest hover:bg-white hover:text-black transition-all">
+                Salvar Lançamento
+              </button>
+            </form>
           </div>
         </div>
       )}
+
+      {/* CARDS E LISTAGEM (Continua igual ao anterior) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="bg-zinc-950 p-8 rounded-[2.5rem] border-2 border-zinc-900 relative overflow-hidden">
+          <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest mb-2">Receita Bruta</p>
+          <p className="text-4xl font-black font-mono text-white">R$ {dre.bruto.toLocaleString()}</p>
+        </div>
+
+        <div className="bg-zinc-950 p-8 rounded-[2.5rem] border-2 border-blue-600/20 relative overflow-hidden">
+          <p className="text-blue-500/50 text-[10px] font-black uppercase tracking-widest mb-2">Lucro Líquido</p>
+          <p className="text-4xl font-black font-mono text-blue-500">R$ {dre.liquido.toLocaleString()}</p>
+        </div>
+
+        <div className="bg-zinc-950 p-8 rounded-[2.5rem] border-2 border-red-900/20 relative overflow-hidden">
+          <p className="text-red-500/50 text-[10px] font-black uppercase tracking-widest mb-2">Pendências</p>
+          <p className="text-4xl font-black font-mono text-red-500">R$ {dre.pendente.toLocaleString()}</p>
+        </div>
+      </div>
+
+      <div className="bg-zinc-900/30 rounded-[3rem] border border-zinc-900 p-6 md:p-10">
+        <h3 className="text-2xl font-black italic uppercase mb-8 flex items-center gap-3">
+          <Calendar className="text-zinc-500" /> Fluxo de Caixa
+        </h3>
+
+        <div className="space-y-4">
+          {transacoes.map((t: any) => (
+            <div key={t.id} className="bg-black border border-zinc-800 p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-4 hover:border-zinc-700 transition-all group">
+              <div className="flex items-center gap-5 w-full md:w-auto">
+                <div className={`p-4 rounded-2xl ${t.tipo === 'RECEITA' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                  {t.tipo === 'RECEITA' ? <ArrowUpCircle size={24} /> : <ArrowDownCircle size={24} />}
+                </div>
+                <div>
+                  <p className="font-black uppercase text-sm text-white group-hover:text-blue-500 transition-colors">{t.descricao}</p>
+                  <p className="text-[10px] font-bold text-zinc-600 uppercase mt-1">Venc: {new Date(t.vencimento).toLocaleDateString()} • {t.status}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <span className={`text-2xl font-mono font-black ${t.tipo === 'RECEITA' ? 'text-green-500' : 'text-white'}`}>
+                  {t.tipo === 'DESPESA' ? '-' : ''} R$ {t.valor.toLocaleString()}
+                </span>
+                {t.status === 'PENDENTE' && (
+                  <button onClick={() => baixarTransacao(t.id)} className="bg-zinc-800 hover:bg-green-600 text-white p-3 rounded-xl transition-all">
+                    <CheckCircle2 size={20} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
